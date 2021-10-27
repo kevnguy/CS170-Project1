@@ -1,22 +1,10 @@
 import copy
 from collections import deque
 
-# goal state
-goal = [[1,2,3],
-        [4,5,6],
-        [7,8,0]]
-
-goal = [[1,2,3,4],
-        [5,6,7,8],
-        [9,10,11,0]]
-
-# set of seen states
-seen = []
-
-# Used to calculate Manhatten 
-coordinates = {}
-        
 class Node:
+    """
+    Class that represents the puzzle board
+    """
     def __init__(self, board, zeroPos=None, parent=None) -> None:
         self.board = board
         self.parent = parent
@@ -31,191 +19,238 @@ class Node:
         self.cost = 0
 
     def findZero(self):
+        """ 
+        Helper used to locate blankspace (0) in given puzzle
+        """
         for i in range(len(self.board)):
             for j in range(len(self.board[0])):
                 if self.board[i][j] == 0:
                     self.loc_zero = (i,j)
 
-def printBoard(puzzle) -> None:
-    for row in puzzle.board:
-        for col in row:
-            print("{:^2}".format(col), end=' ')
-        print()
+    def printBoard(self) -> None:
+        """
+        Helper used to print the puzzle board
+        """
+        for row in self.board:
+            for col in row:
+                print("{:^2}".format(col), end=' ')
+            print()
 
-def search(root, heristic) -> Node:
     """
-    General search algorithm to find a solution if it exists
+    Helper functions to expand states - 4 possible moves
     """
-    global seen
-    expansions = 0
-    queue = deque([root])
-    seen.append(root.board)
+    def moveUp(self):
+        i,j =  self.loc_zero
+        if i == 0:
+            return None
+        self.board[i][j], self.board[i - 1][j] = self.board[i - 1][j], self.board[i][j]
+        self.loc_zero = (i-1,j)
+        return self
 
-    while queue:
-        #have to sort queue 
-        queue = deque(sorted(list(queue), key=lambda node: node.cost))
-        front_node = queue.popleft()
-        if(front_node.board == goal):
-            print("Solution found at: depth = {}".format(front_node.depth))
-            print("{} Nodes expanded".format(expansions))
-            return front_node
+    def moveDown(self):
+        i,j =  self.loc_zero
+        if i == len(self.board)-1:
+            return None
+        self.board[i][j], self.board[i + 1][j] = self.board[i + 1][j], self.board[i][j]
+        self.loc_zero = (i+1,j)
+        return self
+
+    def moveLeft(self):
+        i,j =  self.loc_zero
+        if j == 0:
+            return None
+        self.board[i][j], self.board[i][j - 1] = self.board[i][j - 1], self.board[i][j]
+        self.loc_zero = (i,j-1)
+        return self
+
+    def moveRight(self):
+        i,j =  self.loc_zero
+        if j == len(self.board[0])-1:
+            return None
+        self.board[i][j], self.board[i][j + 1] = self.board[i][j + 1], self.board[i][j]
+        self.loc_zero = (i,j+1)
+        return self
+
+
+class Game:
+    """
+    Class that holds inputed states and prints solution
+    """
+    def __init__(self,start, heuristic) -> None:
+        self.start = start
+        self.heuristic = heuristic
+
+    def printSolution(self,node) -> None:
+        """
+        Helper function to print puzzle solution
+        """
+        if node.parent is None:
+            node.printBoard()
+            print()
+            return
         else:
-            # update queue with queuing function
-            print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
-                    .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
-            printBoard(front_node)
-            queue = QueueFunction(front_node, queue, heristic)
-            expansions += 1
-    else:
-        print("No solution found") 
+            self.printSolution(node.parent)
+            node.printBoard()
+            print()
 
-def QueueFunction(node, queue, heristic):
+
+class Evaluater:
     """
-    Queuing function used to expand node and update queue
+    Class to perform search on the game state
     """
-    global seen
-    # 4 possible moves        
-    move_up = Node(copy.deepcopy(node.board), node.loc_zero, node)
-    move_down = Node(copy.deepcopy(node.board), node.loc_zero, node)
-    move_left = Node(copy.deepcopy(node.board), node.loc_zero, node)
-    move_right = Node(copy.deepcopy(node.board), node.loc_zero, node)
+    def __init__(self, Game) -> None:
+        self.start = Game.start
+        self.heuristic = Game.heuristic
+        self.generateCoordinates()
+        self.generateGoal()
+        self.queue = deque()
+        self.seen = []
 
-    # might need to fix cost 
-    move_up = moveUp(move_up)
-    if move_up is not None:
-        if move_up.board not in seen:
-            move_up.parent = node
-            move_up.cost = move_up.depth + getHeuristic(move_up, heristic)
-            seen.append(move_up.board)
-            queue.append(move_up)
-   
-    move_down = moveDown(move_down)
-    if move_down is not None:
-        if move_down.board not in seen:
-            move_down.parent = node
-            move_down.cost = move_down.depth + getHeuristic(move_down, heristic)
-            seen.append(move_down.board)
-            queue.append(move_down)
+    def generateCoordinates(self) -> None:
+        """
+        Helper function that generates a dict for positions in a solved 
+        board. Used to calculate the Manhatten distance heuristic
+        """
+        length = len(self.start.board)*len(self.start.board[0])
+        keys = [0]*length
+        keys[0:length-1] = list(range(1,length))
+        points = []
+        for i in range(len(self.start.board)):    
+            for j in range(len(self.start.board[0])):
+                points.append((i,j))
+        self.coordinates = dict(zip(keys,points))
 
-    move_left = moveLeft(move_left)
-    if move_left is not None:
-        if move_left.board not in seen:
-            move_left.parent = node
-            move_left.cost = move_left.depth + getHeuristic(move_left, heristic)
-            seen.append(move_left.board)
-            queue.append(move_left)
-
-    move_right = moveRight(move_right)
-    if move_right is not None:
-        if move_right.board not in seen:
-            move_right.parent = node
-            move_right.cost = move_right.depth + getHeuristic(move_right, heristic)
-            seen.append(move_right.board)
-            queue.append(move_right)
-            
-    return queue
-
-def moveUp(node) -> Node:
-    i,j =  node.loc_zero
-    if i == 0:
-        return None
-    node.board[i][j], node.board[i - 1][j] = node.board[i - 1][j], node.board[i][j]
-    node.loc_zero = (i-1,j)
-    return node
-
-def moveDown(node) -> Node:
-    i,j =  node.loc_zero
-    if i == len(node.board)-1:
-         return None
-    node.board[i][j], node.board[i + 1][j] = node.board[i + 1][j], node.board[i][j]
-    node.loc_zero = (i+1,j)
-    return node
-
-def moveLeft(node) -> Node:
-    i,j =  node.loc_zero
-    if j == 0:
-        return None
-    node.board[i][j], node.board[i][j - 1] = node.board[i][j - 1], node.board[i][j]
-    node.loc_zero = (i,j-1)
-    return node
-
-def moveRight(node) -> Node:
-    i,j =  node.loc_zero
-    if j == len(node.board[0])-1:
-        return None
-    node.board[i][j], node.board[i][j + 1] = node.board[i][j + 1], node.board[i][j]
-    node.loc_zero = (i,j+1)
-    return node
-
-def getHeuristic(node, heristic) -> int:
-    if heristic == 1:
-        return misplacedTileHeuristic(node)
-    elif heristic == 2:
-        return manhattanDistanceHeuristic(node)
-    return 0
-
-def misplacedTileHeuristic(node) -> int:
-    cnt = 0
-    for i in range(len(node.board)):
-        for j in range(len(node.board[0])):
-            if node.board[i][j] and node.board[i][j] != goal[i][j]:
+    def generateGoal(self) -> None:
+        """
+        Helper function to generates goal state based on the user inputed puzzle dimensions
+        """
+        cnt = 1
+        row = len(self.start.board)
+        col = len(self.start.board[0])
+        self.goal = [[0]*col for i in range(row)]
+        for i in range(row):
+            for j in range(col):
+                self.goal[i][j] = (cnt%(row*col))
                 cnt+=1
-    return cnt
 
-def manhattanDistanceHeuristic(node) -> int:
-    cnt = 0
-    for i in range(len(node.board)):
-        for j in range(len(node.board[0])):
-            if node.board[i][j] and node.board[i][j] != goal[i][j]:
-                x,y = coordinates.get(node.board[i][j])
-                cnt+=abs(i-x) + abs(j-y)
-    return cnt
+    def search(self) -> Node:
+        """
+        General search algorithm to find a solution if it exists
+        """
+        expansions = 0
+        self.queue = deque([self.start])
+        self.seen.append(self.start.board)
 
-def printSolution(node) -> None:
-    if node.parent is None:
-        printBoard(node)
-        print()
-        return
-    else:
-        printSolution(node.parent)
-        printBoard(node)
-        print()
+        while self.queue:
+            if self.heuristic:
+                self.queue = deque(sorted(list(self.queue), key=lambda node: (node.cost,node.depth)))
+            front_node = self.queue.popleft()
+            if(front_node.board == self.goal):
+                print("Solution found at: depth = {}".format(front_node.depth))
+                print("{} Nodes expanded".format(expansions))
+                return front_node
+            else:
+                # update queue with queuing function
+                print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
+                        .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
+                front_node.printBoard()
+                self.queue = self.QueueFunction(front_node)
+                expansions += 1
+        else:
+            print("No solution found") 
 
-def generateCoordinates(root) -> None:
-    global coordinates
-    length = len(root.board)*len(root.board[0])
-    keys = [0]*length
-    keys[0:length-1] = list(range(1,length))
-    points = []
-    for i in range(len(root.board)):    
-        for j in range(len(root.board[0])):
-            points.append((i,j))
-    coordinates = dict(zip(keys,points))
+    def QueueFunction(self, node):
+        """
+        Queuing function used to expand node and update queue
+        """
+        # 4 possible moves        
+        move_up = Node(copy.deepcopy(node.board), node.loc_zero, node)
+        move_down = Node(copy.deepcopy(node.board), node.loc_zero, node)
+        move_left = Node(copy.deepcopy(node.board), node.loc_zero, node)
+        move_right = Node(copy.deepcopy(node.board), node.loc_zero, node)
 
-def generateGoal(root) -> None:
-    global goal
-    cnt = 1
-    row = len(root.board)
-    col = len(root.board[0])
-    goal = [[0]*col for i in range(row)]
-    for i in range(row):
-        for j in range(col):
-            goal[i][j] = (cnt%(row*col))
-            cnt+=1
+        # might need to fix cost 
+        move_up.moveUp()
+        if move_up is not None:
+            if move_up.board not in self.seen:
+                move_up.parent = node
+                move_up.cost = move_up.depth + self.getHeuristic(move_up)
+                self.seen.append(move_up.board)
+                self.queue.append(move_up)
+
+        move_down.moveDown()
+        if move_down is not None:
+            if move_down.board not in self.seen:
+                move_down.parent = node
+                move_down.cost = move_down.depth + self.getHeuristic(move_down)
+                self.seen.append(move_down.board)
+                self.queue.append(move_down)
+
+        move_left.moveLeft()
+        if move_left is not None:
+            if move_left.board not in self.seen:
+                move_left.parent = node
+                move_left.cost = move_left.depth + self.getHeuristic(move_left)
+                self.seen.append(move_left.board)
+                self.queue.append(move_left)
+
+        move_right.moveRight()
+        if move_right is not None:
+            if move_right.board not in self.seen:
+                move_right.parent = node
+                move_right.cost = move_right.depth + self.getHeuristic(move_right)
+                self.seen.append(move_right.board)
+                self.queue.append(move_right)
+                
+        return self.queue
+
+    def misplacedTileHeuristic(self, node) -> int:
+        """
+        Helper function to calculate misplaced tile heuristic
+        """
+        cnt = 0
+        for i in range(len(node.board)):
+            for j in range(len(node.board[0])):
+                if node.board[i][j] and node.board[i][j] != self.goal[i][j]:
+                    cnt+=1
+        return cnt
+
+    def manhattanDistanceHeuristic(self, node) -> int:
+        """
+        Helper function to calculate manhattan distance heuristic
+        """
+        cnt = 0
+        for i in range(len(node.board)):
+            for j in range(len(node.board[0])):
+                if node.board[i][j] and node.board[i][j] != self.goal[i][j]:
+                    x,y = self.coordinates.get(node.board[i][j])
+                    cnt+=abs(i-x) + abs(j-y)
+        return cnt
+
+    def getHeuristic(self, node) -> int:
+        """
+        Helper function to return the correct heuristic value from game state
+        """
+        if self.heuristic == 1:
+            return self.misplacedTileHeuristic(node)
+        elif self.heuristic == 2:
+            return self.manhattanDistanceHeuristic(node)
+        return 0
 
 def main():
-    start = [[1,3,6],
-             [5,0,7],
-             [4,8,2]]
+    """
+    Main function
+    """
+    start = [[7,1,2],
+             [4,8,5],
+             [6,3,0]]
     root = Node(start)
-    generateCoordinates(root)
-    generateGoal(root)
-    print(misplacedTileHeuristic(root))
-    print(manhattanDistanceHeuristic(root))
-   
-    res = search(root,2)
+    heuristic = 2
+    newGame = Game(root, heuristic)
+    evaluate = Evaluater(newGame)
+    solution = evaluate.search()
 
-    if res is not None: printSolution(res)
+    if solution is not None: newGame.printSolution(solution)
     
 if __name__ == "__main__":
     main()
