@@ -6,8 +6,15 @@ goal = [[1,2,3],
         [4,5,6],
         [7,8,0]]
 
+goal = [[1,2,3,4],
+        [5,6,7,8],
+        [9,10,11,0]]
+
 # set of seen states
 seen = []
+
+# Used to calculate Manhatten 
+coordinates = {}
         
 class Node:
     def __init__(self, board, posZero, parent=None) -> None:
@@ -19,7 +26,6 @@ class Node:
         else:
             self.depth = 0
         self.cost = 0
-        
 
 def findZero(arr):
     for i in range(len(arr)):
@@ -29,7 +35,9 @@ def findZero(arr):
 
 def printBoard(puzzle) -> None:
     for row in puzzle.board:
-        print(*row, sep=' ')
+        for col in row:
+            print("{:^2}".format(col), end=' ')
+        print()
 
 def search(root, heristic) -> Node:
     """
@@ -64,7 +72,6 @@ def QueueFunction(node, queue, heristic):
     Queuing function used to expand node and update queue
     """
     global seen
-    
     # 4 possible moves        
     move_up = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
     move_down = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
@@ -76,7 +83,7 @@ def QueueFunction(node, queue, heristic):
     if move_up is not None:
         if move_up.board not in seen:
             move_up.parent = node
-            move_up.cost = move_up.depth + getHeristic(move_up, heristic)
+            move_up.cost = move_up.depth + getHeuristic(move_up, heristic)
             seen.append(move_up.board)
             queue.append(move_up)
    
@@ -84,7 +91,7 @@ def QueueFunction(node, queue, heristic):
     if move_down is not None:
         if move_down.board not in seen:
             move_down.parent = node
-            move_down.cost = move_down.depth + getHeristic(move_down, heristic)
+            move_down.cost = move_down.depth + getHeuristic(move_down, heristic)
             seen.append(move_down.board)
             queue.append(move_down)
 
@@ -92,7 +99,7 @@ def QueueFunction(node, queue, heristic):
     if move_left is not None:
         if move_left.board not in seen:
             move_left.parent = node
-            move_left.cost = move_left.depth + getHeristic(move_left, heristic)
+            move_left.cost = move_left.depth + getHeuristic(move_left, heristic)
             seen.append(move_left.board)
             queue.append(move_left)
 
@@ -100,7 +107,7 @@ def QueueFunction(node, queue, heristic):
     if move_right is not None:
         if move_right.board not in seen:
             move_right.parent = node
-            move_right.cost = move_right.depth + getHeristic(move_right, heristic)
+            move_right.cost = move_right.depth + getHeuristic(move_right, heristic)
             seen.append(move_right.board)
             queue.append(move_right)
             
@@ -138,8 +145,25 @@ def moveRight(node) -> Node:
     node.loc_zero = (i,j+1)
     return node
 
-def getHeristic(node, heristic) -> int:
+def getHeuristic(node, heristic) -> int:
     return 0
+
+def misplacedTileHeuristic(node) -> int:
+    cnt = 0
+    for i in range(len(node.board)):
+        for j in range(len(node.board[0])):
+            if node.board[i][j] and node.board[i][j] != goal[i][j]:
+                cnt+=1
+    return cnt
+
+def manhattanDistanceHeuristic(node) -> int:
+    cnt = 0
+    for i in range(len(node.board)):
+        for j in range(len(node.board[0])):
+            if node.board[i][j] and node.board[i][j] != goal[i][j]:
+                x,y = coordinates.get(node.board[i][j])
+                cnt+=abs(i-x) + abs(j-y)
+    return cnt
 
 def printSolution(node) -> None:
     if not node.parent:
@@ -151,14 +175,39 @@ def printSolution(node) -> None:
         printBoard(node)
         print()
 
+def generateCoordinates(root) -> None:
+    global coordinates
+    length = len(root.board)*len(root.board[0])
+    keys = [0]*length
+    keys[0:length-1] = list(range(1,length))
+    points = []
+    for i in range(len(root.board)):    
+        for j in range(len(root.board[0])):
+            points.append((i,j))
+    coordinates = dict(zip(keys,points))
+
+def generateGoal(root) -> None:
+    global goal
+    cnt = 1
+    row = len(root.board)
+    col = len(root.board[0])
+    goal = [[0]*col for i in range(row)]
+    for i in range(row):
+        for j in range(col):
+            goal[i][j] = (cnt%(row*col))
+            cnt+=1
 
 def main():
-    #printPuzzle(goal)
-    start = [[1,2,3],
-             [5,0,6],
-             [4,7,8]]
+    start = [[1,2,3,4],
+             [5,6,7,8],
+             [0,9,10,11]]
     posZero = findZero(start)
     root = Node(start, posZero)
+    generateCoordinates(root)
+    generateGoal(root)
+    print(misplacedTileHeuristic(root))
+    print(manhattanDistanceHeuristic(root))
+   
     res = search(root,0)
 
     printSolution(res)
