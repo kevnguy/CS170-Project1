@@ -17,21 +17,24 @@ seen = []
 coordinates = {}
         
 class Node:
-    def __init__(self, board, posZero, parent=None) -> None:
+    def __init__(self, board, zeroPos=None, parent=None) -> None:
         self.board = board
-        self.loc_zero = posZero
         self.parent = parent
         if self.parent is not None:
             self.depth = parent.depth + 1
         else:
             self.depth = 0
+        if zeroPos is None:
+            self.findZero()
+        else:
+            self.loc_zero = zeroPos
         self.cost = 0
 
-def findZero(arr):
-    for i in range(len(arr)):
-        for j in range(len(arr[0])):
-            if arr[i][j] == 0:
-                return i,j
+    def findZero(self):
+        for i in range(len(self.board)):
+            for j in range(len(self.board[0])):
+                if self.board[i][j] == 0:
+                    self.loc_zero = (i,j)
 
 def printBoard(puzzle) -> None:
     for row in puzzle.board:
@@ -48,11 +51,9 @@ def search(root, heristic) -> Node:
     queue = deque([root])
     seen.append(root.board)
 
-    queue = QueueFunction(root, queue, heristic)
-
     while queue:
         #have to sort queue 
-        #queue = deque(sorted(list(queue), key=lambda node: node.cost))
+        queue = deque(sorted(list(queue), key=lambda node: node.cost))
         front_node = queue.popleft()
         if(front_node.board == goal):
             print("Solution found at: depth = {}".format(front_node.depth))
@@ -60,7 +61,8 @@ def search(root, heristic) -> Node:
             return front_node
         else:
             # update queue with queuing function
-            print("Best state to expand with: g(n) = {} and f(n) = {}".format(front_node.depth, front_node.cost))
+            print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
+                    .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
             printBoard(front_node)
             queue = QueueFunction(front_node, queue, heristic)
             expansions += 1
@@ -73,10 +75,10 @@ def QueueFunction(node, queue, heristic):
     """
     global seen
     # 4 possible moves        
-    move_up = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
-    move_down = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
-    move_left = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
-    move_right = Node(copy.deepcopy(node.board), copy.deepcopy(node.loc_zero), node)
+    move_up = Node(copy.deepcopy(node.board), node.loc_zero, node)
+    move_down = Node(copy.deepcopy(node.board), node.loc_zero, node)
+    move_left = Node(copy.deepcopy(node.board), node.loc_zero, node)
+    move_right = Node(copy.deepcopy(node.board), node.loc_zero, node)
 
     # might need to fix cost 
     move_up = moveUp(move_up)
@@ -146,6 +148,10 @@ def moveRight(node) -> Node:
     return node
 
 def getHeuristic(node, heristic) -> int:
+    if heristic == 1:
+        return misplacedTileHeuristic(node)
+    elif heristic == 2:
+        return manhattanDistanceHeuristic(node)
     return 0
 
 def misplacedTileHeuristic(node) -> int:
@@ -166,7 +172,7 @@ def manhattanDistanceHeuristic(node) -> int:
     return cnt
 
 def printSolution(node) -> None:
-    if not node.parent:
+    if node.parent is None:
         printBoard(node)
         print()
         return
@@ -198,19 +204,18 @@ def generateGoal(root) -> None:
             cnt+=1
 
 def main():
-    start = [[1,2,3,4],
-             [5,6,7,8],
-             [0,9,10,11]]
-    posZero = findZero(start)
-    root = Node(start, posZero)
+    start = [[1,3,6],
+             [5,0,7],
+             [4,8,2]]
+    root = Node(start)
     generateCoordinates(root)
     generateGoal(root)
     print(misplacedTileHeuristic(root))
     print(manhattanDistanceHeuristic(root))
    
-    res = search(root,0)
+    res = search(root,2)
 
-    printSolution(res)
+    if res is not None: printSolution(res)
     
 if __name__ == "__main__":
     main()
