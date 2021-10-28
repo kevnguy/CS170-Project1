@@ -14,17 +14,16 @@ https://www.programiz.com/python-programming
 """
 def menu():
     print("Welcome to my scuffed program")
-    chooseInput = ''
     heuristicChoice = 1
     inputPuzzle = []
     while True:
-        chooseInput = input("Enter 0 to use default puzzle or 1 to input a custom puzzle\n")
+        chooseInput = input("Enter 1 to use default puzzle or 2 to input a custom puzzle\n")
         if chooseInput == '1' or chooseInput == '2': 
             break
         else: 
             continue
 
-    if chooseInput == '0':
+    if chooseInput == '1':
         inputPuzzle = [[8,6,7],
                        [2,5,4],
                        [3,0,1]]
