@@ -1,5 +1,16 @@
 import copy
-from collections import deque
+import heapq
+from timeit import default_timer as timer
+
+"""
+https://docs.python.org/3/library/heapq.html
+https://www.programiz.com/python-programming
+
+8 6 7
+2 5 4
+3 0 1
+31 depth solution
+"""
 
 class Node:
     """
@@ -35,6 +46,9 @@ class Node:
             for col in row:
                 print("{:^2}".format(col), end=' ')
             print()
+    
+    def __lt__(self, other):
+        return (self.cost, self.depth) < (other.cost, other.depth)
 
     """
     Helper functions to expand states - 4 possible moves
@@ -93,7 +107,6 @@ class Game:
             node.printBoard()
             print()
 
-
 class Evaluater:
     """
     Class to perform search on the game state
@@ -103,7 +116,7 @@ class Evaluater:
         self.heuristic = Game.heuristic
         self.generateCoordinates()
         self.generateGoal()
-        self.queue = deque()
+        self.queue = []
         self.seen = []
 
     def generateCoordinates(self) -> None:
@@ -138,23 +151,25 @@ class Evaluater:
         General search algorithm to find a solution if it exists
         """
         expansions = 0
-        self.queue = deque([self.start])
+        max_queue = 0
+        heapq.heappush(self.queue,self.start)
         self.seen.append(self.start.board)
 
         while self.queue:
-            if self.heuristic:
-                self.queue = deque(sorted(list(self.queue), key=lambda node: (node.cost,node.depth)))
-            front_node = self.queue.popleft()
+            front_node = heapq.heappop(self.queue)
             if(front_node.board == self.goal):
                 print("Solution found at: depth = {}".format(front_node.depth))
                 print("{} Nodes expanded".format(expansions))
+                print("Max nodes in the queue: ", max_queue)
                 return front_node
             else:
                 # update queue with queuing function
                 print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
                         .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
                 front_node.printBoard()
-                self.queue = self.QueueFunction(front_node)
+                self.QueueFunction(front_node)
+                if len(self.queue) > max_queue:
+                    max_queue = len(self.queue)
                 expansions += 1
         else:
             print("No solution found") 
@@ -176,7 +191,7 @@ class Evaluater:
                 move_up.parent = node
                 move_up.cost = move_up.depth + self.getHeuristic(move_up)
                 self.seen.append(move_up.board)
-                self.queue.append(move_up)
+                heapq.heappush(self.queue,move_up)
 
         move_down.moveDown()
         if move_down is not None:
@@ -184,7 +199,7 @@ class Evaluater:
                 move_down.parent = node
                 move_down.cost = move_down.depth + self.getHeuristic(move_down)
                 self.seen.append(move_down.board)
-                self.queue.append(move_down)
+                heapq.heappush(self.queue,move_down)
 
         move_left.moveLeft()
         if move_left is not None:
@@ -192,7 +207,7 @@ class Evaluater:
                 move_left.parent = node
                 move_left.cost = move_left.depth + self.getHeuristic(move_left)
                 self.seen.append(move_left.board)
-                self.queue.append(move_left)
+                heapq.heappush(self.queue,move_left)
 
         move_right.moveRight()
         if move_right is not None:
@@ -200,7 +215,7 @@ class Evaluater:
                 move_right.parent = node
                 move_right.cost = move_right.depth + self.getHeuristic(move_right)
                 self.seen.append(move_right.board)
-                self.queue.append(move_right)
+                heapq.heappush(self.queue,move_right)
                 
         return self.queue
 
@@ -241,16 +256,17 @@ def main():
     """
     Main function
     """
-    start = [[7,1,2],
-             [4,8,5],
-             [6,3,0]]
+    start, heuristic = menu()
     root = Node(start)
-    heuristic = 2
     newGame = Game(root, heuristic)
     evaluate = Evaluater(newGame)
+    begin = timer()
     solution = evaluate.search()
+    end = timer()
 
-    if solution is not None: newGame.printSolution(solution)
-    
+    if solution is not None: 
+        newGame.printSolution(solution)
+        print("Elapsed time: {:5f}".format(end-begin))
+
 if __name__ == "__main__":
     main()
