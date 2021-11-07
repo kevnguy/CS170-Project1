@@ -2,15 +2,17 @@ class Game:
     """
     Class that holds inputed states and prints solution
     """
-    def __init__(self,start, heuristic) -> None:
+    def __init__(self,start, heuristic, output) -> None:
         self.start = start
         self.heuristic = heuristic
+        self.output = output 
 
     def printSolution(self,node) -> None:
         """
         Helper function to print puzzle solution
         """
         if node.parent is None:
+            print("Solution")
             node.printBoard()
             print()
             return
