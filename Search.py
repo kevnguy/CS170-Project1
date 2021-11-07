@@ -1,6 +1,7 @@
 import copy
 import heapq
 from Node import Node
+
 class Evaluater:
     """
     Class to perform search on the game state
@@ -11,7 +12,8 @@ class Evaluater:
         self.generateCoordinates()
         self.generateGoal()
         self.queue = []
-        self.seen = []
+        self.seen = set()
+        self.Searchdetails = Game.output
 
     def generateCoordinates(self) -> None:
         """
@@ -46,27 +48,36 @@ class Evaluater:
         """
         expansions = 0
         max_queue = 0
+        self.start.cost = self.getHeuristic(self.start)
         heapq.heappush(self.queue,self.start)
-        self.seen.append(self.start.board)
+        self.seen.add(str(self.start.board))
+        match self.heuristic:
+            case 1:
+                print("Searching with: A* with Misplaced Tile heuristic")
+            case 2:
+                print("Searching with: A* with Manhattan Distance heuristic")
+            case _:
+                print("Searching with: Uniform Cost Search")
 
         while self.queue:
             front_node = heapq.heappop(self.queue)
             if(front_node.board == self.goal):
-                print("Solution found at: depth = {}".format(front_node.depth))
-                print("{} Nodes expanded".format(expansions))
-                print("Max nodes in the queue: ", max_queue)
+                print("\nSolution found at depth",front_node.depth)
+                print("Nodes expanded:", expansions)
+                print("Max nodes in the queue:", max_queue)
                 return front_node
             else:
                 # update queue with queuing function
-                print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
+                if(self.Searchdetails):
+                    print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
                         .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
-                front_node.printBoard()
+                    front_node.printBoard()
                 self.QueueFunction(front_node)
                 if len(self.queue) > max_queue:
                     max_queue = len(self.queue)
                 expansions += 1
         else:
-            print("No solution found") 
+            print("No solution found :(") 
 
     def QueueFunction(self, node):
         """
@@ -78,37 +89,40 @@ class Evaluater:
         move_left = Node(copy.deepcopy(node.board), node.loc_zero, node)
         move_right = Node(copy.deepcopy(node.board), node.loc_zero, node)
 
-        # might need to fix cost 
         move_up.moveUp()
         if move_up is not None:
-            if move_up.board not in self.seen:
+            moveUpstr = str(move_up.board)
+            if moveUpstr not in self.seen:
                 move_up.parent = node
                 move_up.cost = move_up.depth + self.getHeuristic(move_up)
-                self.seen.append(move_up.board)
+                self.seen.add(moveUpstr)
                 heapq.heappush(self.queue,move_up)
 
         move_down.moveDown()
         if move_down is not None:
-            if move_down.board not in self.seen:
+            moveDownStr = str(move_down.board)
+            if moveDownStr not in self.seen:
                 move_down.parent = node
                 move_down.cost = move_down.depth + self.getHeuristic(move_down)
-                self.seen.append(move_down.board)
+                self.seen.add(moveDownStr)
                 heapq.heappush(self.queue,move_down)
 
         move_left.moveLeft()
-        if move_left is not None:
-            if move_left.board not in self.seen:
+        if str(move_left) is not None:
+            moveLeftStr = str(move_left.board)
+            if moveLeftStr not in self.seen:
                 move_left.parent = node
                 move_left.cost = move_left.depth + self.getHeuristic(move_left)
-                self.seen.append(move_left.board)
+                self.seen.add(moveLeftStr)
                 heapq.heappush(self.queue,move_left)
 
         move_right.moveRight()
-        if move_right is not None:
-            if move_right.board not in self.seen:
+        if str(move_right) is not None:
+            moveRightStr = str(move_right.board)
+            if moveRightStr not in self.seen:
                 move_right.parent = node
                 move_right.cost = move_right.depth + self.getHeuristic(move_right)
-                self.seen.append(move_right.board)
+                self.seen.add(moveRightStr)
                 heapq.heappush(self.queue,move_right)
                 
         return self.queue
@@ -140,11 +154,13 @@ class Evaluater:
         """
         Helper function to return the correct heuristic value from game state
         """
-        if self.heuristic == 1:
-            return self.misplacedTileHeuristic(node)
-        elif self.heuristic == 2:
-            return self.manhattanDistanceHeuristic(node)
-        return 0
+        match self.heuristic:
+            case 1:
+                return self.misplacedTileHeuristic(node)
+            case 2:
+                return self.manhattanDistanceHeuristic(node)
+            case _:
+                return 0
 
 if __name__ == "__main__":
     pass
