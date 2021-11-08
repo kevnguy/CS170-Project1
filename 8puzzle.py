@@ -1,6 +1,6 @@
 from Node import Node
 from Game import Game
-from Search import Evaluater
+from Search import Search
 from timeit import default_timer as timer
 
 """
@@ -77,7 +77,7 @@ def main() -> None:
     start, heuristic, detail = menu()
     root = Node(start)
     newGame = Game(root, heuristic, detail)
-    evaluate = Evaluater(newGame)
+    evaluate = Search(newGame)
     begin = timer()
     solution = evaluate.search()
     end = timer()
