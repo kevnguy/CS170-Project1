@@ -83,7 +83,7 @@ def main() -> None:
     end = timer()
 
     if solution is not None: 
-        print('\n'+'-'*40)
+        print('-'*40+'\n')
         newGame.printSolution(solution)
         print("Elapsed time: {:.2f} seconds".format(end-begin))
 

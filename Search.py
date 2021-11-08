@@ -63,7 +63,7 @@ class Search:
             front_node = heapq.heappop(self.queue)
             if(front_node.board == self.goal):
                 print('\n'+'-'*40)
-                print("\nSolution found at depth",front_node.depth)
+                print("Solution found at depth",front_node.depth)
                 print("Nodes expanded:", expansions)
                 print("Max nodes in the queue:", max_queue)
                 return front_node
