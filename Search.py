@@ -2,7 +2,7 @@ import copy
 import heapq
 from Node import Node
 
-class Evaluater:
+class Search:
     """Class to perform search on the game state"""
     def __init__(self, Game) -> None:
         self.start = Game.start
@@ -15,7 +15,7 @@ class Evaluater:
 
     def generateCoordinates(self) -> None:
         """
-        Generatess a dict for positions in a solved board. 
+        Generates a dict for positions in a solved board. 
         Used to calculate the Manhatten distance heuristic.
         """
         length = len(self.start.board)*len(self.start.board[0])
@@ -62,6 +62,7 @@ class Evaluater:
         while self.queue:
             front_node = heapq.heappop(self.queue)
             if(front_node.board == self.goal):
+                print('\n'+'-'*40)
                 print("\nSolution found at depth",front_node.depth)
                 print("Nodes expanded:", expansions)
                 print("Max nodes in the queue:", max_queue)
