@@ -1,7 +1,5 @@
 class Node:
-    """
-    Class that represents the puzzle board
-    """
+    """Class that represents the state of puzzle board"""
     def __init__(self, board, zeroPos=None, parent=None) -> None:
         self.board = board
         self.parent = parent
@@ -15,19 +13,15 @@ class Node:
             self.loc_zero = zeroPos
         self.cost = 0
 
-    def findZero(self):
-        """ 
-        Helper used to locate blankspace (0) in given node
-        """
+    def findZero(self) -> None:
+        """Locates blank space (0) in given node"""
         for i in range(len(self.board)):
             for j in range(len(self.board[0])):
                 if self.board[i][j] == 0:
                     self.loc_zero = (i,j)
 
     def printBoard(self) -> None:
-        """
-        Helper used to print the puzzle board
-        """
+        """Prints the puzzle board"""
         for row in self.board:
             for col in row:
                 print("{:^2}".format(col), end=' ')
@@ -36,9 +30,7 @@ class Node:
     def __lt__(self, other):
         return (self.cost, self.depth) < (other.cost, other.depth)
 
-    """
-    Helper functions to expand states - 4 possible moves
-    """
+    # Helper functions to expand states - 4 possible moves
     def moveUp(self):
         i,j =  self.loc_zero
         if i == 0:

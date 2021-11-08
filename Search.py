@@ -3,9 +3,7 @@ import heapq
 from Node import Node
 
 class Evaluater:
-    """
-    Class to perform search on the game state
-    """
+    """Class to perform search on the game state"""
     def __init__(self, Game) -> None:
         self.start = Game.start
         self.heuristic = Game.heuristic
@@ -17,8 +15,8 @@ class Evaluater:
 
     def generateCoordinates(self) -> None:
         """
-        Helper function that generates a dict for positions in a solved 
-        board. Used to calculate the Manhatten distance heuristic
+        Generatess a dict for positions in a solved board. 
+        Used to calculate the Manhatten distance heuristic.
         """
         length = len(self.start.board)*len(self.start.board[0])
         keys = [0]*length
@@ -30,9 +28,7 @@ class Evaluater:
         self.coordinates = dict(zip(keys,points))
 
     def generateGoal(self) -> None:
-        """
-        Helper function to generates goal state based on the user inputed puzzle dimensions
-        """
+        """Generates goal state based on the user inputed puzzle."""
         cnt = 1
         row = len(self.start.board)
         col = len(self.start.board[0])
@@ -44,13 +40,16 @@ class Evaluater:
 
     def search(self) -> Node:
         """
-        General search algorithm to find a solution if it exists
+        General search algorithm to find a solution.
+        Returns solution if found.
         """
         expansions = 0
         max_queue = 0
         self.start.cost = self.getHeuristic(self.start)
         heapq.heappush(self.queue,self.start)
         self.seen.add(str(self.start.board))
+        
+        # Prints search algorithm 
         match self.heuristic:
             case 1:
                 print("Searching with: A* with Misplaced Tile heuristic")
@@ -59,6 +58,7 @@ class Evaluater:
             case _:
                 print("Searching with: Uniform Cost Search")
 
+        # Begin search        
         while self.queue:
             front_node = heapq.heappop(self.queue)
             if(front_node.board == self.goal):
@@ -67,11 +67,11 @@ class Evaluater:
                 print("Max nodes in the queue:", max_queue)
                 return front_node
             else:
-                # update queue with queuing function
                 if(self.Searchdetails):
                     print(("Best state to expand with: g(n) = {} h(n) = {} and f(n) = {}"
                         .format(front_node.depth, front_node.cost-front_node.depth, front_node.cost)))
                     front_node.printBoard()
+                # update queue with queuing function
                 self.QueueFunction(front_node)
                 if len(self.queue) > max_queue:
                     max_queue = len(self.queue)
@@ -79,10 +79,8 @@ class Evaluater:
         else:
             print("No solution found :(") 
 
-    def QueueFunction(self, node):
-        """
-        Queuing function used to expand node and update queue
-        """
+    def QueueFunction(self, node) -> None:
+        """Takes in node, expands node"""
         # 4 possible moves        
         move_up = Node(copy.deepcopy(node.board), node.loc_zero, node)
         move_down = Node(copy.deepcopy(node.board), node.loc_zero, node)
@@ -124,13 +122,9 @@ class Evaluater:
                 move_right.cost = move_right.depth + self.getHeuristic(move_right)
                 self.seen.add(moveRightStr)
                 heapq.heappush(self.queue,move_right)
-                
-        return self.queue
 
     def misplacedTileHeuristic(self, node) -> int:
-        """
-        Helper function to calculate misplaced tile heuristic
-        """
+        """Takes in node, calculate and returns Misplaced Tile heuristic"""
         cnt = 0
         for i in range(len(node.board)):
             for j in range(len(node.board[0])):
@@ -139,9 +133,7 @@ class Evaluater:
         return cnt
 
     def manhattanDistanceHeuristic(self, node) -> int:
-        """
-        Helper function to calculate manhattan distance heuristic
-        """
+        """Takes in node, calculate and returns Manhattan Distance heuristic"""
         cnt = 0
         for i in range(len(node.board)):
             for j in range(len(node.board[0])):
@@ -151,9 +143,7 @@ class Evaluater:
         return cnt
 
     def getHeuristic(self, node) -> int:
-        """
-        Helper function to return the correct heuristic value from game state
-        """
+        """Takes in node and return the correct heuristic value"""
         match self.heuristic:
             case 1:
                 return self.misplacedTileHeuristic(node)
